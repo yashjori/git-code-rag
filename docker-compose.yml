@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: .
+    image: git-code-assistant-backend:${IMAGE_TAG:-dev}
+    env_file: .env
+    volumes:
+      - repo_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_ENABLE_PRIVATE_TOKENS: "true"
+    image: git-code-assistant-frontend:${IMAGE_TAG:-dev}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # The real system certbot path, not a project-local copy - so the
+      # apt-installed certbot package's default systemd timer (which only
+      # ever scans /etc/letsencrypt) actually renews this certificate.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  repo_data:
