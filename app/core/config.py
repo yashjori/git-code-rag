@@ -150,6 +150,13 @@ class Settings(BaseSettings):
     auth_session_days: int = 7
     cookie_secure: bool = True
 
+    # Optional login account created at startup if it doesn't exist yet -
+    # for hosts with an ephemeral filesystem and no shell (e.g. Render's
+    # free tier), where app/scripts/create_user.py can't be run. Takes a
+    # bcrypt hash, never a plain-text password.
+    bootstrap_admin_username: str = ""
+    bootstrap_admin_password_hash: str = ""
+
     # Groq (generation LLM only)
     groq_api_key: str = ""
     groq_model: str = ""

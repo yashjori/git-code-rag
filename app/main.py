@@ -8,15 +8,18 @@ Run with:
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.dependencies import get_user_store
 from app.api.routes import auth, chat, health, repositories
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.core.logging import configure_logging, get_logger
+from app.models.user import UserRecord
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -38,7 +41,25 @@ async def lifespan(_: FastAPI):
             "AUTH_SECRET_KEY is missing or too short (needs >=32 chars) - "
             "sessions cannot be issued or verified"
         )
+    _ensure_bootstrap_admin()
     yield
+
+
+def _ensure_bootstrap_admin() -> None:
+    username = settings.bootstrap_admin_username
+    password_hash = settings.bootstrap_admin_password_hash
+    if not (username and password_hash):
+        return
+    store = get_user_store()
+    if store.get(username) is None:
+        store.create(
+            UserRecord(
+                username=username,
+                password_hash=password_hash,
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        )
+        logger.info("created bootstrap admin user '%s'", username)
 
 
 app = FastAPI(

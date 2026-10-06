@@ -9,6 +9,11 @@ env/
 .ruff_cache/
 
 .env
+.env.*
+!.env.example
+*.log
+.vscode/
+.idea/
 *.db
 data/repositories/*
 !data/repositories/.gitkeep
