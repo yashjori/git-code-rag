@@ -1,10 +1,9 @@
 """SQLite-backed user store.
 
 Same pattern as RepositoryMetadataStore. Passwords are never stored in
-plain text - only a bcrypt hash. There is no open self-registration
-endpoint; accounts are created directly against this store (see
-app/scripts/create_user.py), since an open signup form on an app that
-calls paid-per-use Groq/Qdrant APIs would just be a new abuse vector.
+plain text - only a bcrypt hash. Accounts are created through the public
+POST /api/v1/auth/signup route, or directly against this store with
+app/scripts/create_user.py.
 """
 
 from __future__ import annotations
@@ -13,6 +12,8 @@ import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+
+from app.core.exceptions import UsernameTakenError
 
 
 @dataclass(frozen=True)
@@ -48,11 +49,14 @@ class UserStore:
             conn.close()
 
     def create(self, record: UserRecord) -> None:
-        with self._connect() as conn:
-            conn.execute(
-                "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
-                (record.username, record.password_hash, record.created_at),
-            )
+        try:
+            with self._connect() as conn:
+                conn.execute(
+                    "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+                    (record.username, record.password_hash, record.created_at),
+                )
+        except sqlite3.IntegrityError:
+            raise UsernameTakenError(f"Username '{record.username}' is already taken") from None
 
     def get(self, username: str) -> UserRecord | None:
         with self._connect() as conn:

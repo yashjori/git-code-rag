@@ -335,3 +335,52 @@ def test_full_login_flow_grants_access_to_protected_routes(unauthenticated_clien
 
     after_logout = unauthenticated_client.get("/api/v1/auth/me")
     assert after_logout.status_code == 401
+
+
+def test_signup_creates_account_and_starts_session(unauthenticated_client, real_user_store):
+    response = unauthenticated_client.post(
+        "/api/v1/auth/signup", json={"username": "bob", "password": "longenough"}
+    )
+
+    assert response.status_code == 201
+    assert response.json() == {"username": "bob"}
+    assert "gca_session" in response.cookies
+    assert real_user_store.get("bob") is not None
+    assert real_user_store.get("bob").password_hash != "longenough"
+
+    assert unauthenticated_client.get("/api/v1/auth/me").json() == {"username": "bob"}
+    assert unauthenticated_client.get("/api/v1/repositories").status_code == 200
+
+
+def test_signup_then_login_with_same_credentials(unauthenticated_client, real_user_store):
+    unauthenticated_client.post(
+        "/api/v1/auth/signup", json={"username": "bob", "password": "longenough"}
+    )
+    unauthenticated_client.post("/api/v1/auth/logout")
+
+    response = unauthenticated_client.post(
+        "/api/v1/auth/login", json={"username": "bob", "password": "longenough"}
+    )
+    assert response.status_code == 200
+
+
+def test_signup_with_taken_username_is_409(unauthenticated_client, real_user_store):
+    body = {"username": "bob", "password": "longenough"}
+    assert unauthenticated_client.post("/api/v1/auth/signup", json=body).status_code == 201
+
+    response = unauthenticated_client.post("/api/v1/auth/signup", json=body)
+    assert response.status_code == 409
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"username": "bob", "password": "short"},
+        {"username": "ab", "password": "longenough"},
+        {"username": "bad name!", "password": "longenough"},
+        {"username": "bob", "password": "x" * 73},
+    ],
+)
+def test_signup_rejects_invalid_input(unauthenticated_client, real_user_store, body):
+    response = unauthenticated_client.post("/api/v1/auth/signup", json=body)
+    assert response.status_code == 422

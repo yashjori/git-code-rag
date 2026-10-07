@@ -110,14 +110,22 @@ function MainApp({ username, onLogout }: { username: string; onLogout: () => voi
 }
 
 function App() {
-  const { status, username, isLoggingIn, loginError, login, logout } = useAuth()
+  const { status, username, isLoggingIn, loginError, authenticate, clearLoginError, logout } =
+    useAuth()
 
   if (status === 'checking') {
     return <div className="flex h-screen items-center justify-center bg-ink" aria-busy />
   }
 
   if (status === 'anonymous' || !username) {
-    return <LoginPage isLoggingIn={isLoggingIn} loginError={loginError} onLogin={login} />
+    return (
+      <LoginPage
+        isLoggingIn={isLoggingIn}
+        loginError={loginError}
+        onSubmit={authenticate}
+        onModeChange={clearLoginError}
+      />
+    )
   }
 
   return <MainApp username={username} onLogout={logout} />

@@ -35,20 +35,27 @@ export function useAuth() {
     }
   }, [])
 
-  const login = useCallback(async (usernameInput: string, password: string) => {
-    setIsLoggingIn(true)
-    setLoginError(null)
-    try {
-      const result = await api.login({ username: usernameInput, password })
-      setUsername(result.username)
-      setStatus('authenticated')
-    } catch (error) {
-      setLoginError(error instanceof ApiError ? error.message : 'Could not log in.')
-      throw error
-    } finally {
-      setIsLoggingIn(false)
-    }
-  }, [])
+  const authenticate = useCallback(
+    async (mode: 'login' | 'signup', usernameInput: string, password: string) => {
+      setIsLoggingIn(true)
+      setLoginError(null)
+      try {
+        const call = mode === 'signup' ? api.signup : api.login
+        const result = await call({ username: usernameInput, password })
+        setUsername(result.username)
+        setStatus('authenticated')
+      } catch (error) {
+        const fallback = mode === 'signup' ? 'Could not create account.' : 'Could not log in.'
+        setLoginError(error instanceof ApiError ? error.message : fallback)
+        throw error
+      } finally {
+        setIsLoggingIn(false)
+      }
+    },
+    [],
+  )
+
+  const clearLoginError = useCallback(() => setLoginError(null), [])
 
   const logout = useCallback(async () => {
     await api.logout().catch(() => {
@@ -59,5 +66,5 @@ export function useAuth() {
     setStatus('anonymous')
   }, [])
 
-  return { status, username, isLoggingIn, loginError, login, logout }
+  return { status, username, isLoggingIn, loginError, authenticate, clearLoginError, logout }
 }

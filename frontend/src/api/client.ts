@@ -92,6 +92,13 @@ export const api = {
       { skipUnauthorizedHandler: true },
     ),
 
+  signup: (body: LoginRequest) =>
+    request<CurrentUserResponse>(
+      '/api/v1/auth/signup',
+      { method: 'POST', body: JSON.stringify(body) },
+      { skipUnauthorizedHandler: true },
+    ),
+
   logout: () => request<{ status: string }>('/api/v1/auth/logout', { method: 'POST' }),
 
   currentUser: () =>

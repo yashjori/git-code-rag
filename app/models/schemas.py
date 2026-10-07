@@ -17,6 +17,15 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1)
 
 
+class SignupRequest(BaseModel):
+    # Letters, digits, dot, dash, underscore - keeps usernames safe to show
+    # verbatim in the UI and logs.
+    username: str = Field(min_length=3, max_length=32, pattern=r"^[A-Za-z0-9._-]+$")
+    # bcrypt silently ignores everything past 72 bytes, so cap it rather
+    # than let two different long passwords hash identically.
+    password: str = Field(min_length=8, max_length=72)
+
+
 class CurrentUserResponse(BaseModel):
     username: str
 

@@ -1,8 +1,8 @@
-import sqlite3
 from pathlib import Path
 
 import pytest
 
+from app.core.exceptions import UsernameTakenError
 from app.models.user import UserRecord, UserStore
 
 
@@ -31,5 +31,5 @@ class TestUserStore:
     def test_duplicate_username_raises(self, tmp_path: Path):
         store = UserStore(tmp_path / "users.db")
         store.create(_record("alice"))
-        with pytest.raises(sqlite3.IntegrityError):
+        with pytest.raises(UsernameTakenError):
             store.create(_record("alice"))

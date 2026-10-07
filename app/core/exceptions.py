@@ -37,6 +37,12 @@ class AuthenticationError(AppError):
     http_status = 401
 
 
+class UsernameTakenError(AppError):
+    """Sign-up attempted with a username that already exists."""
+
+    http_status = 409
+
+
 class UnsupportedProviderError(InvalidRequestError):
     """Requested repository provider is not implemented."""
 
